@@ -93,6 +93,18 @@ function jm_disable_custom_image_sizes($sizes)
         foreach ($_wp_additional_image_sizes as $size_name => $size_data) {
             remove_image_size($size_name);
         }
+
+        // Run WP-CLI command to regenerate thumbnails
+        $output = '';
+        $return_var = 0;
+        exec('wp media regenerate --yes', $output, $return_var);
+
+        // Check the command output and return status
+        if ($return_var === 0) {
+            add_action('admin_notices', 'jm_images_regenerated_notice');
+        } else {
+            add_action('admin_notices', 'jm_image_generation_disabled_notice');
+        }
     }
     return $sizes;
 }
@@ -502,8 +514,35 @@ function jm_restore_image_options_deactivation()
 }
 register_deactivation_hook(__FILE__, 'jm_restore_image_options_deactivation');
 
-
-function test() {
-    echo wp_render_image(86, 6144, 3072, false);
+/**
+ * jm_images_regenerated_notice
+ *
+ * Disable image notice
+ *
+ * @param  mixed $clean
+ * @return void
+ */
+function jm_images_regenerated_notice()
+{
+    $screen = get_current_screen();
+    if ($screen->id === 'options-media') {
+        $disabled = get_option('jm_disable_image_sizes');
+        if ($disabled === 'on') {
+            echo '<div class="notice notice-warning is-dismissible"><p>' . __('Disable Custom Image Size is enabled so custom image sizes will not be generated and images have been cleaned.', 'jm') . '</p></div>';
+        } else {
+            echo '<div class="notice notice-warning is-dismissible"><p>' . __('Disable Custom Image Size is enabled so custom image sizes will be generated and images have been regenerated.', 'jm') . '</p></div>';
+        }
+    }
 }
-add_action('wp_footer', 'test');
+function jm_image_generation_disabled_notice()
+{
+    $screen = get_current_screen();
+    if ($screen->id === 'options-media') {
+        $disabled = get_option('jm_disable_image_sizes');
+        if ($disabled === 'on') {
+            echo '<div class="notice notice-warning is-dismissible"><p>' . __('Disable Custom Image Size is enabled so no custom image sizes will not be generated.', 'jm') . '</p></div>';
+        } else {
+            echo '<div class="notice notice-warning is-dismissible"><p>' . __('Disable Custom Image Size is enabled so custom image sizes will be generated.', 'jm') . '</p></div>';
+        }
+    }
+}
