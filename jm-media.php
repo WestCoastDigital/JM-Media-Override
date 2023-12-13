@@ -2,11 +2,11 @@
 
 /**
  * Plugin Name: JM Media Override
- * Plugin URI: https://example.com/jm-media
+ * Plugin URI: https://github.com/WestCoastDigital/JM-Media-Override
  * Description: This plugin disables creation of custom image sizes on upload and a function to render images cropped as like on front end.
  * Version: 1.0.0
  * Author: Stormbox
- * Author URI: https://example.com
+ * Author URI: https://www.stormbox.com.au/
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: jm
@@ -94,7 +94,8 @@ function jm_disable_custom_image_sizes($sizes)
 }
 add_action('init', 'jm_disable_custom_image_sizes');
 
-function jm_disable_image_settings() {
+function jm_disable_image_settings()
+{
     $disabled = get_option('jm_disable_image_sizes');
     $js = '';
     if ($disabled === 'on') {
@@ -272,6 +273,7 @@ function jm_render_cropped_image($image_id, $width, $height, $crop_position = fa
     }
 }
 
+
 /**
  * jm_render_scaled_image
  *
@@ -384,3 +386,100 @@ function jm_render_scaled_image($image_id, $width, $height, $url = false)
         return null;
     }
 }
+
+/**
+ * jm_save_image_options_activation
+ *
+ * This saves the default image sizes on plugin activation
+ *
+ * @return void
+ */
+function jm_save_image_options_activation()
+{
+    if (!get_option('jm_save_image_options')) {
+        update_option('jm_save_image_options', array(
+            'thumbnail_size_w' => get_option('thumbnail_size_w', 0) ? get_option('thumbnail_size_w') : 150,
+            'thumbnail_size_h' => get_option('thumbnail_size_h', 0) ? get_option('thumbnail_size_h') : 150,
+            'medium_size_w' => get_option('medium_size_w', 0) ? get_option('medium_size_w') : 300,
+            'medium_size_h' => get_option('medium_size_h', 0) ? get_option('medium_size_h') : 300,
+            'medium_large_size_w' => get_option('medium_large_size_w', 0) ? get_option('medium_large_size_w') : 768,
+            'medium_large_size_h' => get_option('medium_large_size_h', 0) ? get_option('medium_large_size_h') : 768,
+            'large_size_w' => get_option('large_size_w', 0) ? get_option('large_size_w') : 1024,
+            'large_size_h' => get_option('large_size_h', 0) ? get_option('large_size_h') : 1024,
+        ));
+    }
+}
+register_activation_hook(__FILE__, 'jm_save_image_options_activation');
+
+/**
+ * jm_restore_image_options_defaults
+ *
+ * If saved options are 0 then reset to default
+ *
+ * @return void
+ */
+function jm_restore_image_options_defaults()
+{
+    $image_options = get_option('jm_save_image_options');
+
+    if (!$image_options) {
+        return; // No options found
+    }
+
+    $defaults = array(
+        'thumbnail_size_w' => 150,
+        'thumbnail_size_h' => 150,
+        'medium_size_w' => 300,
+        'medium_size_h' => 300,
+        'medium_large_size_w' => 768,
+        'medium_large_size_h' => 768,
+        'large_size_w' => 1024,
+        'large_size_h' => 1024,
+    );
+
+    foreach ($defaults as $key => $default) {
+        if (isset($image_options[$key]) && intval($image_options[$key]) === 0) {
+            // Reset to default if value is 0
+            $image_options[$key] = $default;
+        }
+    }
+
+    update_option('jm_save_image_options', $image_options);
+}
+add_action('admin_init', 'jm_restore_image_options_defaults');
+
+
+/**
+ * jm_restore_image_options_deactivation
+ *
+ * Restore image options on deactivation and if 0 then reset to default
+ *
+ *
+ * @return void
+ */
+function jm_restore_image_options_deactivation()
+{
+    $options = get_option('jm_save_image_options');
+    $defaults = array(
+        'thumbnail_size_w' => 150,
+        'thumbnail_size_h' => 150,
+        'medium_size_w' => 300,
+        'medium_size_h' => 300,
+        'medium_large_size_w' => 768,
+        'medium_large_size_h' => 768,
+        'large_size_w' => 1024,
+        'large_size_h' => 1024,
+    );
+    if ($options) {
+        foreach ($options as $key => $option) {
+            if (isset($key) && intval($key) === 0) {
+                // Reset to default if value is 0
+                update_option($key, $defaults[$key]);
+            } else {
+                update_option($key, $option);
+            }
+        }
+    }
+    delete_option('jm_save_image_options');
+}
+register_deactivation_hook(__FILE__, 'jm_restore_image_options_deactivation');
