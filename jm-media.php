@@ -70,6 +70,28 @@ function jm_reset_default_sizes()
         update_option('medium_large_size_h', 0);
         update_option('large_size_w', 0);
         update_option('large_size_h', 0);
+    } else {
+        $image_options = get_option('jm_save_image_options');
+        $defaults = array(
+            'thumbnail_size_w' => 150,
+            'thumbnail_size_h' => 150,
+            'medium_size_w' => 300,
+            'medium_size_h' => 300,
+            'medium_large_size_w' => 768,
+            'medium_large_size_h' => 768,
+            'large_size_w' => 1024,
+            'large_size_h' => 1024,
+        );
+        if ($image_options) {
+            foreach ($image_options as $key => $option) {
+                if (isset($key) && intval($key) === 0) {
+                    // Reset to default if value is 0
+                    update_option($key, $defaults[$key]);
+                } else {
+                    update_option($key, $option);
+                }
+            }
+        }
     }
 }
 add_action('init', 'jm_reset_default_sizes');
@@ -94,6 +116,8 @@ function jm_disable_custom_image_sizes($sizes)
             remove_image_size($size_name);
         }
 
+        return $sizes;
+
         // Run WP-CLI command to regenerate thumbnails
         $output = '';
         $return_var = 0;
@@ -106,7 +130,6 @@ function jm_disable_custom_image_sizes($sizes)
             add_action('admin_notices', 'jm_image_generation_disabled_notice');
         }
     }
-    return $sizes;
 }
 add_action('init', 'jm_disable_custom_image_sizes', 999);
 
@@ -403,57 +426,6 @@ function jm_render_scaled_image($image_id, $width, $height, $url = false)
     }
 }
 
-/**
- * jm_restore_on_enable_image_generation
- *
- * Lets check if the option to generate images is enabled and if so restore the image options
- *
- * @return void
- */
-function jm_restore_on_enable_image_generation()
-{
-    $disabled = get_option('jm_disable_image_sizes');
-    if (!$disabled) {
-        jm_restore_image_options_defaults();
-    }
-}
-add_action('admin_init', 'jm_restore_image_options_defaults');
-
-/**
- * jm_restore_image_options_defaults
- *
- * If saved options are 0 then reset to default
- *
- * @return void
- */
-function jm_restore_image_options_defaults()
-{
-    $image_options = get_option('jm_save_image_options');
-
-    if (!$image_options) {
-        return; // No options found
-    }
-
-    $defaults = array(
-        'thumbnail_size_w' => 150,
-        'thumbnail_size_h' => 150,
-        'medium_size_w' => 300,
-        'medium_size_h' => 300,
-        'medium_large_size_w' => 768,
-        'medium_large_size_h' => 768,
-        'large_size_w' => 1024,
-        'large_size_h' => 1024,
-    );
-
-    foreach ($defaults as $key => $default) {
-        if (isset($image_options[$key]) && intval($image_options[$key]) === 0) {
-            // Reset to default if value is 0
-            $image_options[$key] = $default;
-        }
-    }
-
-    update_option('jm_save_image_options', $image_options);
-}
 
 /**
  * jm_save_image_options_activation
@@ -464,17 +436,19 @@ function jm_restore_image_options_defaults()
  */
 function jm_save_image_options_activation()
 {
+    $default_image_options = array(
+        'thumbnail_size_w' => get_option('thumbnail_size_w', 150),
+        'thumbnail_size_h' => get_option('thumbnail_size_h', 150),
+        'medium_size_w' => get_option('medium_size_w', 300),
+        'medium_size_h' => get_option('medium_size_h', 300),
+        'medium_large_size_w' => get_option('medium_large_size_w', 768),
+        'medium_large_size_h' => get_option('medium_large_size_h', 768),
+        'large_size_w' => get_option('large_size_w', 1024),
+        'large_size_h' => get_option('large_size_h', 1024),
+    );
+
     if (!get_option('jm_save_image_options')) {
-        update_option('jm_save_image_options', array(
-            'thumbnail_size_w' => get_option('thumbnail_size_w', 0) ? get_option('thumbnail_size_w') : 150,
-            'thumbnail_size_h' => get_option('thumbnail_size_h', 0) ? get_option('thumbnail_size_h') : 150,
-            'medium_size_w' => get_option('medium_size_w', 0) ? get_option('medium_size_w') : 300,
-            'medium_size_h' => get_option('medium_size_h', 0) ? get_option('medium_size_h') : 300,
-            'medium_large_size_w' => get_option('medium_large_size_w', 0) ? get_option('medium_large_size_w') : 768,
-            'medium_large_size_h' => get_option('medium_large_size_h', 0) ? get_option('medium_large_size_h') : 768,
-            'large_size_w' => get_option('large_size_w', 0) ? get_option('large_size_w') : 1024,
-            'large_size_h' => get_option('large_size_h', 0) ? get_option('large_size_h') : 1024,
-        ));
+        update_option('jm_save_image_options', $default_image_options);
     }
 }
 register_activation_hook(__FILE__, 'jm_save_image_options_activation');
@@ -540,7 +514,7 @@ function jm_image_generation_disabled_notice()
     if ($screen->id === 'options-media') {
         $disabled = get_option('jm_disable_image_sizes');
         if ($disabled === 'on') {
-            echo '<div class="notice notice-warning is-dismissible"><p>' . __('Disable Custom Image Size is enabled so no custom image sizes will not be generated.', 'jm') . '</p></div>';
+            echo '<div class="notice notice-warning is-dismissible"><p>' . __('Disable Custom Image Size is enabled so no custom image sizes will be generated.', 'jm') . '</p></div>';
         } else {
             echo '<div class="notice notice-warning is-dismissible"><p>' . __('Disable Custom Image Size is enabled so custom image sizes will be generated.', 'jm') . '</p></div>';
         }
