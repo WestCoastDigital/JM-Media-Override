@@ -89,10 +89,14 @@ function jm_disable_custom_image_sizes($sizes)
         foreach (get_intermediate_image_sizes() as $size) {
             remove_image_size($size);
         }
+        global $_wp_additional_image_sizes;
+        foreach ($_wp_additional_image_sizes as $size_name => $size_data) {
+            remove_image_size($size_name);
+        }
     }
     return $sizes;
 }
-add_action('init', 'jm_disable_custom_image_sizes');
+add_action('init', 'jm_disable_custom_image_sizes', 999);
 
 function jm_disable_image_settings()
 {
@@ -497,3 +501,9 @@ function jm_restore_image_options_deactivation()
     delete_option('jm_save_image_options');
 }
 register_deactivation_hook(__FILE__, 'jm_restore_image_options_deactivation');
+
+
+function test() {
+    echo wp_render_image(86, 6144, 3072, false);
+}
+add_action('wp_footer', 'test');
