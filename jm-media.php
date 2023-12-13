@@ -388,28 +388,20 @@ function jm_render_scaled_image($image_id, $width, $height, $url = false)
 }
 
 /**
- * jm_save_image_options_activation
+ * jm_restore_on_enable_image_generation
  *
- * This saves the default image sizes on plugin activation
+ * Lets check if the option to generate images is enabled and if so restore the image options
  *
  * @return void
  */
-function jm_save_image_options_activation()
+function jm_restore_on_enable_image_generation()
 {
-    if (!get_option('jm_save_image_options')) {
-        update_option('jm_save_image_options', array(
-            'thumbnail_size_w' => get_option('thumbnail_size_w', 0) ? get_option('thumbnail_size_w') : 150,
-            'thumbnail_size_h' => get_option('thumbnail_size_h', 0) ? get_option('thumbnail_size_h') : 150,
-            'medium_size_w' => get_option('medium_size_w', 0) ? get_option('medium_size_w') : 300,
-            'medium_size_h' => get_option('medium_size_h', 0) ? get_option('medium_size_h') : 300,
-            'medium_large_size_w' => get_option('medium_large_size_w', 0) ? get_option('medium_large_size_w') : 768,
-            'medium_large_size_h' => get_option('medium_large_size_h', 0) ? get_option('medium_large_size_h') : 768,
-            'large_size_w' => get_option('large_size_w', 0) ? get_option('large_size_w') : 1024,
-            'large_size_h' => get_option('large_size_h', 0) ? get_option('large_size_h') : 1024,
-        ));
+    $disabled = get_option('jm_disable_image_sizes');
+    if (!$disabled) {
+        jm_restore_image_options_defaults();
     }
 }
-register_activation_hook(__FILE__, 'jm_save_image_options_activation');
+add_action('admin_init', 'jm_restore_image_options_defaults');
 
 /**
  * jm_restore_image_options_defaults
@@ -446,8 +438,30 @@ function jm_restore_image_options_defaults()
 
     update_option('jm_save_image_options', $image_options);
 }
-add_action('admin_init', 'jm_restore_image_options_defaults');
 
+/**
+ * jm_save_image_options_activation
+ *
+ * This saves the default image sizes on plugin activation
+ *
+ * @return void
+ */
+function jm_save_image_options_activation()
+{
+    if (!get_option('jm_save_image_options')) {
+        update_option('jm_save_image_options', array(
+            'thumbnail_size_w' => get_option('thumbnail_size_w', 0) ? get_option('thumbnail_size_w') : 150,
+            'thumbnail_size_h' => get_option('thumbnail_size_h', 0) ? get_option('thumbnail_size_h') : 150,
+            'medium_size_w' => get_option('medium_size_w', 0) ? get_option('medium_size_w') : 300,
+            'medium_size_h' => get_option('medium_size_h', 0) ? get_option('medium_size_h') : 300,
+            'medium_large_size_w' => get_option('medium_large_size_w', 0) ? get_option('medium_large_size_w') : 768,
+            'medium_large_size_h' => get_option('medium_large_size_h', 0) ? get_option('medium_large_size_h') : 768,
+            'large_size_w' => get_option('large_size_w', 0) ? get_option('large_size_w') : 1024,
+            'large_size_h' => get_option('large_size_h', 0) ? get_option('large_size_h') : 1024,
+        ));
+    }
+}
+register_activation_hook(__FILE__, 'jm_save_image_options_activation');
 
 /**
  * jm_restore_image_options_deactivation
